@@ -1,0 +1,54 @@
+/*
+    This file is part of the Paintball 2 Map Release Tool.
+
+    The Paintball 2 Map Release Tool is free software: you can
+	redistribute it and/or modify it under the terms of the
+	GNU General Public License as published by the Free Software
+	Foundation, either version 3 of the License, or (at your option)
+	any later version.
+
+    The Paintball 2 Map Release Tool is distributed in the hope that
+	it will be useful, but WITHOUT ANY WARRANTY; without even the
+	implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+	PURPOSE.  See the GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this file.  If not, see <http://www.gnu.org/licenses/>.
+
+	Copyright (C) 2014 Richard Ebeling ("richard")
+*/
+
+
+
+#include "resource.h"
+
+//no manifest, comctlv6 is used because there is a pragma in main.cpp
+
+IDI_APP ICON "MRT.ico"
+
+VS_VERSION_INFO VERSIONINFO
+	FILEVERSION 1,0,0,0
+	PRODUCTVERSION 1,0,0,0
+	FILEOS			VOS_NT_WINDOWS32
+	FILETYPE		VFT_APP
+	FILEFLAGSMASK	0x0000003F
+	FILEFLAGS		0x00000000
+
+{
+	BLOCK "StringFileInfo"
+	{
+		BLOCK "040904E4"
+		{
+			VALUE "FileDescription",  "A tool to create a zip archive with a map and all its dependencies."
+			VALUE "FileVersion",      "1.0.0.0\0"
+			VALUE "ProductName",      "Digital Paint: Paintball 2 - Map Release Tool\0"
+			VALUE "ProductVersion",   "1.0.0.0\0"
+			VALUE "LegalCopyright",   "Copyright (C) 2014 'Richard'\0"
+		}
+	}
+	
+	BLOCK "VarFileInfo"
+	{
+		VALUE "Translation", 0x409, 1252
+	}
+}
