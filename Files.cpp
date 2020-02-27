@@ -203,8 +203,13 @@ std::vector<std::string> BSPFile::RequiredFilesInEntities(void) const
 			}
 			else if (!entities.at(x).at(y).first.compare("noise")) // e.g. classname target_speaker: "noise" "kurwa/mozart"
 			{
-				std::string currentFile = "sound/" + entities.at(x).at(y).second + ".wav";
-				result.push_back(currentFile);
+				std::string filename = "sound/" + entities.at(x).at(y).second;
+				// add .wav file ending if it wasn't already there (future-proof: also check for all other 3 or 4 digit endings (.ogg, .mp3, .flac, ...)
+				if(filename.at(filename.length() - 4) != '.' && filename.at(filename.length() - 5) != '.')
+				{
+					filename = filename + ".wav";
+				}
+				result.push_back(filename);
 			}
 		}
 	}
