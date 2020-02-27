@@ -11,7 +11,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="C:\zlib-1.2.8\contrib\minizip\zip.c" />
     <ClCompile Include="Files.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -53,13 +52,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\zlib-1.2.8;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\zlib-1.2.8\contrib\vstudio\vc10\x86\ZlibStatRelease;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\zlib-1.2.11;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\zlib-1.2.11\contrib\vstudio\vc10\x86\ZlibStatRelease;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>C:\zlib-1.2.8;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\zlib-1.2.8\contrib\vstudio\vc10\x86\ZlibStatRelease;$(LibraryPath)</LibraryPath>
+    <IncludePath>D:\zlib-1.2.11;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\zlib-1.2.11\contrib\vstudio\vc10\x86\ZlibStatRelease;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -86,13 +85,14 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>zlibstat.lib;C:\wxWidgets-3.0.1\lib\vc_lib\wxzlib.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>zlibstat.lib;comctl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
