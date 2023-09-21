@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this file.  If not, see <http://www.gnu.org/licenses/>.
 
-	Copyright (C) 2014 Richard Ebeling ("richard")
+	Copyright (C) 2023 Richard Ebeling
 */
 
 #ifndef DEFAULT_TEXTURES_H

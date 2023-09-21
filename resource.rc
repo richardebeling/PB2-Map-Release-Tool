@@ -15,7 +15,7 @@
     You should have received a copy of the GNU General Public License
     along with this file.  If not, see <http://www.gnu.org/licenses/>.
 
-	Copyright (C) 2014 Richard Ebeling ("richard")
+	Copyright (C) 2023 Richard Ebeling
 */
 
 
@@ -27,8 +27,8 @@
 IDI_APP ICON "MRT.ico"
 
 VS_VERSION_INFO VERSIONINFO
-	FILEVERSION 1,0,0,0
-	PRODUCTVERSION 1,0,0,0
+	FILEVERSION 0,0,0,9
+	PRODUCTVERSION 0,0,0,9
 	FILEOS			VOS_NT_WINDOWS32
 	FILETYPE		VFT_APP
 	FILEFLAGSMASK	0x0000003F
@@ -40,10 +40,9 @@ VS_VERSION_INFO VERSIONINFO
 		BLOCK "040904E4"
 		{
 			VALUE "FileDescription",  "A tool to create a zip archive with a map and all its dependencies."
-			VALUE "FileVersion",      "1.0.0.0\0"
+			VALUE "FileVersion",      "0.0.0.9\0"
 			VALUE "ProductName",      "Digital Paint: Paintball 2 - Map Release Tool\0"
-			VALUE "ProductVersion",   "1.0.0.0\0"
-			VALUE "LegalCopyright",   "Copyright (C) 2014 'Richard'\0"
+			VALUE "ProductVersion",   "0.0.0.9\0"
 		}
 	}
 	
