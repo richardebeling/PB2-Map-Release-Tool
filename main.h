@@ -28,8 +28,6 @@
 #include <WindowsX.h>
 #include <Commctrl.h>
 
-// zlib is broken
-#define ZLIB_WINAPI
 #include <contrib/minizip/zip.h>
 
 class MistakesClass
