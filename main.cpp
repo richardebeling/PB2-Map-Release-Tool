@@ -164,7 +164,6 @@ static void OnMainWindowSize (HWND hWnd, UINT state, int cx, int cy)
 static void OnMainWindowDropFiles (HWND hWnd, HDROP hDrop)
 {
 	char*  path;
-	size_t size;
 
 	if (DragQueryFile(hDrop, 0xFFFFFFFF, NULL, 0) != 1)
 	{
@@ -172,7 +171,7 @@ static void OnMainWindowDropFiles (HWND hWnd, HDROP hDrop)
 		return;
 	}
 
-	size = DragQueryFile(hDrop, 0, NULL, 0) + 1;
+	UINT size = DragQueryFile(hDrop, 0, NULL, 0) + 1;
 	path = new char[size];
 
 	if (!DragQueryFile(hDrop, 0, path, size))
@@ -430,7 +429,7 @@ static bool CreateZip(const std::string &path, const std::vector<std::string> &f
 		zip_fileinfo zfi = { 0 };
 		if (S_OK == zipOpenNewFileInZip(zf, files[i].c_str(), &zfi, NULL, 0, NULL, 0, NULL, Z_DEFLATED, Z_DEFAULT_COMPRESSION))
 		{
-			if (0 != zipWriteInFileInZip(zf, &buffer[0], buffer.size()))
+			if (0 != zipWriteInFileInZip(zf, &buffer[0], static_cast<unsigned int>(buffer.size())))
 				ok = false;
 
             if (0 != zipCloseFileInZip(zf))
@@ -490,7 +489,7 @@ static std::string GetOutputPath(const std::string &bspFilename)
 	ofn.nFilterIndex = 1;
 	ofn.lpstrFile = &file[0];
 	ofn.nMaxFile = sizeof(file)/sizeof(file[0]);
-	ofn.nFileExtension = bspFilename.length() - 3;
+	ofn.nFileExtension = static_cast<WORD>(bspFilename.length() - 3);
 	ofn.lpstrTitle = "Select a location to create the archive";
 	ofn.lpstrDefExt = "zip";
 	ofn.Flags = OFN_NOREADONLYRETURN | OFN_OVERWRITEPROMPT;
