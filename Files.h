@@ -318,8 +318,8 @@ public:
 	int8_t GetType(void) const;
 	bool IsOk() const;
 
-	int GetWidth() const;
-	int GetHeight() const;
+	uint32_t GetWidth() const;
+	uint32_t GetHeight() const;
 	bool IsWidthPowerOfTwo() const;
 	bool IsHeightPowerOfTwo() const;
 

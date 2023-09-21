@@ -61,7 +61,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		exit(-1);
 	}
 
-
 	icex.dwSize = sizeof(icex);
 	icex.dwICC = ICC_BAR_CLASSES | ICC_STANDARD_CLASSES;
 	InitCommonControlsEx(&icex);
@@ -148,13 +147,11 @@ static BOOL OnMainWindowCreate (HWND hWnd, LPCREATESTRUCT lpCreateStruct)
 
 static void OnMainWindowSize (HWND hWnd, UINT state, int cx, int cy)
 {
-	RECT rc;
-	int iStatusHeight;
-
 	SendMessage(g_hStatus, WM_SIZE, 0, 0);
 
+	RECT rc;
 	GetWindowRect(g_hStatus, &rc);
-	iStatusHeight = rc.bottom - rc.top;
+	int iStatusHeight = rc.bottom - rc.top;
 
 	GetClientRect(hWnd, &rc);
 	MoveWindow(g_hStatic, 0, 0, rc.right, rc.bottom - iStatusHeight, FALSE);
@@ -163,8 +160,6 @@ static void OnMainWindowSize (HWND hWnd, UINT state, int cx, int cy)
 
 static void OnMainWindowDropFiles (HWND hWnd, HDROP hDrop)
 {
-	char*  path;
-
 	if (DragQueryFile(hDrop, 0xFFFFFFFF, NULL, 0) != 1)
 	{
 		MessageBox(g_hWinMain, "This tool can only process one file at the same time.", "Too many files", MB_OK | MB_ICONERROR);
@@ -172,9 +167,9 @@ static void OnMainWindowDropFiles (HWND hWnd, HDROP hDrop)
 	}
 
 	UINT size = DragQueryFile(hDrop, 0, NULL, 0) + 1;
-	path = new char[size];
+	std::vector<char> path_buffer(size);
 
-	if (!DragQueryFile(hDrop, 0, path, size))
+	if (!DragQueryFile(hDrop, 0, path_buffer.data(), size))
 	{
 		MessageBox(g_hWinMain, "Error when trying to get the dropped files.", "Error", MB_OK | MB_ICONERROR);
 		return;
@@ -182,7 +177,7 @@ static void OnMainWindowDropFiles (HWND hWnd, HDROP hDrop)
 
 	DragFinish(hDrop);
 
-	GenerateArchiveFromFile(std::string(path), ChangeStatusText);
+	GenerateArchiveFromFile(std::string(path_buffer.data()), ChangeStatusText);
 }
 
 static void OnMainWindowDestroy (HWND hWnd)
@@ -201,7 +196,6 @@ static void ChangeStatusText(std::string str)
 
 static void GenerateArchiveFromFile(const std::string &file, void (*ChangeStatusText)(std::string))
 {
-	BSPFile* bsp;
 	std::vector<std::string> requiredFiles;
 	MistakesClass mistakes;
 
@@ -217,7 +211,7 @@ static void GenerateArchiveFromFile(const std::string &file, void (*ChangeStatus
 	}
 
 	(*ChangeStatusText)("Reading file...");
-	bsp = new BSPFile(bspPath.GetPath());
+	auto bsp = std::make_unique<BSPFile>(bspPath.GetPath());
 	if (!bsp->IsOk())
 	{
 		MessageBox(g_hWinMain, "Error while reading the map file.", "Error", MB_OK | MB_ICONERROR);
@@ -234,7 +228,6 @@ static void GenerateArchiveFromFile(const std::string &file, void (*ChangeStatus
 	(*ChangeStatusText)("Analyzing required files in entities...");
 	ConcatStringVectorsWithoutDuplicates(&requiredFiles, bsp->RequiredFilesInEntities());
 	//requiredfiles in worldspawn; model in func_* / model; sky texture
-	delete bsp; //not required anymore
 
 	(*ChangeStatusText)("Analyzing dependencies in required files...");
 	AddDependencies(&requiredFiles, bspPath.GetPb2BasePath());
@@ -297,6 +290,7 @@ static void GenerateArchiveFromFile(const std::string &file, void (*ChangeStatus
 
 static void AddDependencies(std::vector<std::string> * requiredFiles, const std::string &pb2path)
 {
+	// iterating with index because the vector is extended as we iterate.
 	for (size_t i = 0; i < requiredFiles->size(); i++)
 	{
 		//Dependencies from r_scripts
@@ -318,7 +312,7 @@ static void AddDependencies(std::vector<std::string> * requiredFiles, const std:
 		{
 			//If available, use skm model
 			std::string path = pb2path + requiredFiles->at(i).substr(0, requiredFiles->at(i).length() - 4) + ".skm";
-			SKMFile * skm = new SKMFile(path.c_str());
+			auto skm = std::make_unique<SKMFile>(path.c_str());
 			if (skm->IsOk())
 			{
 				std::vector<std::string> tmp = skm->GetUsedTextures(); // will only return texture names, so we need to prepend "models/mymodels/"
@@ -334,7 +328,7 @@ static void AddDependencies(std::vector<std::string> * requiredFiles, const std:
 			else //use md2 model
 			{
 				path = pb2path + requiredFiles->at(i).substr(0, requiredFiles->at(i).length() - 4) + ".md2";
-				MD2File * md2 = new MD2File(path.c_str());
+				auto md2 = std::make_unique<MD2File>(path.c_str());
 				if (md2->IsOk())
 				{
 					std::vector<std::string> tmp = md2->GetUsedTextures();
@@ -344,9 +338,7 @@ static void AddDependencies(std::vector<std::string> * requiredFiles, const std:
 							requiredFiles->insert(requiredFiles->end(), tmp[x]);
 					}
 				}
-				delete md2;
 			}
-			delete skm;
 		}
 	}
 }
@@ -375,27 +367,33 @@ static void CheckTextures(std::vector<std::string> * files, MistakesClass * mist
 		}
 
 		ImageFile img ((pb2path + files->at(i)).c_str());
-		if (img.IsOk() && img.IsHeightPowerOfTwo() && img.IsWidthPowerOfTwo())
-		{
-			size_t pos = files->at(i).find_last_of("/");
-			std::string hr4file = files->at(i).substr(0, pos)
-								  + "/hr4"
-								  + files->at(i).substr(pos, files->at(i).length() - pos - 4)
-								  +".img";
-			hr4file = GetRealFilename(pb2path, hr4file);
-
-			if (hr4file.length() > 0)
-			{
-				files->insert(files->begin() + i, hr4file);
-				i++; //jump over the created entry to the check for hr4 won't be triggered.
-			}
+		
+		if (!img.IsOk()) {
+			mistakes->missingFiles.push_back(files->at(i) + " - could not read -- corrupted file? File added.");
 			i++;
+			continue;
 		}
-		else
+
+		if (!img.IsHeightPowerOfTwo() || !img.IsWidthPowerOfTwo())
 		{
 			mistakes->missingFiles.push_back(files->at(i) + " - resolution is not power of two. File added.");
 			i++;
+			continue;
 		}
+
+		size_t pos = files->at(i).find_last_of("/");
+		std::string hr4file = files->at(i).substr(0, pos)
+								+ "/hr4"
+								+ files->at(i).substr(pos, files->at(i).length() - pos - 4)
+								+".img";
+		hr4file = GetRealFilename(pb2path, hr4file);
+
+		if (hr4file.length() > 0)
+		{
+			files->insert(files->begin() + i, hr4file);
+			i++; //jump over the created entry to the check for hr4 won't be triggered.
+		}
+		i++;
 	}
 
 }
@@ -411,9 +409,9 @@ static bool CreateZip(const std::string &path, const std::vector<std::string> &f
 	if (zf == NULL)
         return false;
 
-	for (size_t i = 0; i < files.size(); i++)
+	for (const auto& file : files)
 	{
-		input.open(pb2BasePath + files[i], std::ios::binary | std::ios::ate);
+		input.open(pb2BasePath + file, std::ios::binary | std::ios::ate);
 		if (!input.is_open())
 		{
 			ok = false;
@@ -427,7 +425,7 @@ static bool CreateZip(const std::string &path, const std::vector<std::string> &f
 		input.close();
 
 		zip_fileinfo zfi = { 0 };
-		if (S_OK == zipOpenNewFileInZip(zf, files[i].c_str(), &zfi, NULL, 0, NULL, 0, NULL, Z_DEFLATED, Z_DEFAULT_COMPRESSION))
+		if (S_OK == zipOpenNewFileInZip(zf, file.c_str(), &zfi, NULL, 0, NULL, 0, NULL, Z_DEFLATED, Z_DEFAULT_COMPRESSION))
 		{
 			if (0 != zipWriteInFileInZip(zf, &buffer[0], static_cast<unsigned int>(buffer.size())))
 				ok = false;
@@ -537,11 +535,11 @@ static std::string GetRealFilename(const std::string &pb2BasePath, const std::st
 	}
 
 
-	for (size_t i = 0; i < validExtensions.size(); i++)
+	for (const auto& validExtension : validExtensions)
 	{
-		if ( FileExists(pb2BasePath + file.substr(0, exStart) + validExtensions.at(i)) )
+		if ( FileExists(pb2BasePath + file.substr(0, exStart) + validExtension) )
 		{
-			result = file.substr(0, exStart) + validExtensions.at(i);
+			result = file.substr(0, exStart) + validExtension;
 			return result;
 		}
 	}
@@ -551,19 +549,9 @@ static std::string GetRealFilename(const std::string &pb2BasePath, const std::st
 
 static void RemoveDefaultFiles(std::vector<std::string> * files)
 {
-	for (size_t x = 0; x < (sizeof(defaultFiles) / sizeof(defaultFiles[0])); x++)
-	{
-		for (size_t y = 0; y < files->size();) //incrementing will be done manually if nothing is erased
-		{
-			if (!files->at(y).compare(defaultFiles[x])) //with file ending
-				files->erase(files->begin() + y);
-			else if (!files->at(y).compare(0, files->at(y).length(), defaultFiles[x], strlen(defaultFiles[x]) - 4)) //without file ending
-				files->erase(files->begin() + y);
-			else
-				y++;
-		}
-	}
-
+	std::erase_if(*files, [](const auto& file) {
+		return defaultFiles.contains(file) || defaultFilesWithoutExtensions.contains(file);
+	});
 }
 
 static void RemoveMultipleEntries(std::vector<std::string> * vec)
@@ -622,8 +610,8 @@ void MistakesClass::displayMistakes(void) const
 				   "Correct example: pball/textures/yourtextures/yourtexture1.jpg with 128x128.\n\n"
 				   "Please check these files (*.img = any kind of image; *.mdl = any kind of model):\n");
 
-		for (size_t i = 0; i < missingFiles.size(); i++)
-			msg.append(missingFiles.at(i) + "\n");
+		for (const auto& missingFile : missingFiles)
+			msg.append(missingFile + "\n");
 	}
 
 	msg.append("\n\nYou may use CTRL+C to copy the content of this message and paste it somewhere else so reading it becomes easier.");

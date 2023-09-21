@@ -21,9 +21,9 @@
 #ifndef DEFAULT_TEXTURES_H
 #define DEFAULT_TEXTURES_H
 
-//this will consume about 30kb of memory.
+#include <set>
 
-const char defaultFiles[][43] = {
+static inline std::set<std::string_view> defaultFiles {
 	"env/arctic1bk.img",
 	"env/arctic1dn.img",
 	"env/arctic1ft.img",
@@ -1109,5 +1109,15 @@ const char defaultFiles[][43] = {
 	"textures/sfx/water/distort1.img",
 	"textures/sfx/water/normal1.img"
 };
+
+std::set<std::string_view> GetDefaultFilesWithoutExtensions() {
+	std::set<std::string_view> result;
+	for (const auto& file : defaultFiles) {
+		result.emplace(file.substr(0, file.length() - 4));
+	}
+	return result;
+}
+
+static inline std::set<std::string_view> defaultFilesWithoutExtensions = GetDefaultFilesWithoutExtensions();
 
 #endif

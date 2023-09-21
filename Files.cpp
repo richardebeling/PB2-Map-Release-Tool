@@ -68,10 +68,10 @@ std::vector<std::string> BSPFile::GetUsedTextures(void) const
 	uint32_t start = *((uint32_t*)(&mBytes[4+4 + 5*8])); //location for texture information section start
 	uint32_t length = *((uint32_t*)(&mBytes[4+4 + 5*8 + 4])); //length of texture information section
 	
-	for (size_t pos = start; pos < (start + length); pos += 76) //1 texinfo struct = 80 bytes
+	for (uint32_t pos = start; pos < (start + length); pos += 76) //1 texinfo struct = 80 bytes
 	{
-		char name[32];
-		memcpy(name, (&mBytes[pos + 12+4+12+4 + 4+4]), 32);
+		char name[33] = { 0 };
+		memcpy(name, &mBytes[static_cast<size_t>(pos) + 12+4+12+4 + 4+4], 32);
 
 		if (std::find(result.begin(), result.end(), name) == result.end())
 		{
@@ -79,15 +79,15 @@ std::vector<std::string> BSPFile::GetUsedTextures(void) const
 		}
 	}
 	
-	for (size_t pos = 0; pos < result.size(); pos++)
+	for (auto& texture : result)
 	{
-		result[pos] = "textures/" + result[pos];
+		texture = "textures/" + texture;
 		size_t exStart;
 
-		if ((exStart = result[pos].find('.', result[pos].length() - 4)) != std::string::npos)
-			result[pos] = result[pos].substr(0, result[pos].length() - exStart) + ".img";
+		if ((exStart = texture.find('.', texture.length() - 4)) != std::string::npos)
+			texture = texture.substr(0, texture.length() - exStart) + ".img";
 		else
-			result[pos] = result[pos] + ".img";
+			texture = texture + ".img";
 	}
 
 	return result;
@@ -157,43 +157,43 @@ std::vector<std::string> BSPFile::RequiredFilesInEntities(void) const
 	std::vector<std::string> result;
 	std::vector<std::vector<std::pair<std::string, std::string> > > entities = GetEntities();
 
-	for (size_t x = 0; x < entities.size(); x++)
+	for (const auto& entity : entities)
 	{
-		for (size_t y = 0; y < entities.at(x).size(); y++)
+		for (const auto& [key, value] : entity)
 		{
-			if (!entities.at(x).at(y).first.compare("requiredfiles")) //eg. classname worldspawn: "requiredfiles" "scripts/flame1.txt pics/mapshots/mapshot.jpg"
+			if (key == "requiredfiles") //eg. classname worldspawn: "requiredfiles" "scripts/flame1.txt pics/mapshots/mapshot.jpg"
 			{
 				size_t pos = 0;
 				size_t oldpos = 0;
 
-				result.reserve(result.size() + std::count(entities.at(x).at(y).second.begin(), entities.at(x).at(y).second.end(), ' '));
+				result.reserve(result.size() + std::count(value.begin(), value.end(), ' '));
 
-				while ((pos = entities.at(x).at(y).second.find(' ', oldpos)) != std::string::npos)
+				while ((pos = value.find(' ', oldpos)) != std::string::npos)
 				{
-					std::string currentFile = entities.at(x).at(y).second.substr(oldpos, pos - oldpos);
+					std::string currentFile = value.substr(oldpos, pos - oldpos);
 					ReplaceFileEnding(&currentFile);
 
 					result.push_back(currentFile);
 					oldpos = pos + 1;
 				}
-				std::string currentFile = entities.at(x).at(y).second.substr(oldpos);
+				std::string currentFile = value.substr(oldpos);
 				ReplaceFileEnding(&currentFile);
 
-				result.push_back(entities.at(x).at(y).second.substr(oldpos));
+				result.push_back(value.substr(oldpos));
 			}
-			else if (!entities.at(x).at(y).first.compare("model")) //eg. classname func_model: "model" "models/props/keyboard/keyboard1.md2"
+			else if (key == "model") //eg. classname func_model: "model" "models/props/keyboard/keyboard1.md2"
 			{
-				if (entities.at(x).at(y).second.compare(0, 1, "*"))	//theres an internal refenrece possible with *X, so this does not relate to an actual model file
+				if (value.compare(0, 1, "*"))	//there's an internal reference possible with *X, so this does not relate to an actual model file
 				{
-					std::string currentFile = entities.at(x).at(y).second;
+					std::string currentFile = value;
 					ReplaceFileEnding(&currentFile);
 					result.push_back(currentFile);
 				}
 			}
-			else if (!entities.at(x).at(y).first.compare("sky"))
+			else if (key == "sky")
 			{
 				result.reserve(result.size() + 6);
-				std::string path = entities.at(x).at(y).second.substr(0, entities.at(x).at(y).second.find(" "));
+				std::string path = value.substr(0, value.find(" "));
 				result.push_back("env/" + path + "up.img");
 				result.push_back("env/" + path + "dn.img");
 				result.push_back("env/" + path + "lf.img");
@@ -201,9 +201,9 @@ std::vector<std::string> BSPFile::RequiredFilesInEntities(void) const
 				result.push_back("env/" + path + "rt.img");
 				result.push_back("env/" + path + "bk.img");
 			}
-			else if (!entities.at(x).at(y).first.compare("noise")) // e.g. classname target_speaker: "noise" "kurwa/mozart"
+			else if (key == "noise") // e.g. classname target_speaker: "noise" "author/mozart"
 			{
-				std::string filename = "sound/" + entities.at(x).at(y).second;
+				std::string filename = "sound/" + value;
 				// add .wav file ending if it wasn't already there (future-proof: also check for all other 3 or 4 digit endings (.ogg, .mp3, .flac, ...)
 				if(filename.at(filename.length() - 4) != '.' && filename.at(filename.length() - 5) != '.')
 				{
@@ -222,16 +222,15 @@ void BSPFile::ReplaceFileEnding(std::string * str)
 	std::string filename = str->substr(0, str->length() - 4);
 	std::string extension = str->substr(str->length() - 4);
 
-	if (!extension.compare(".md2")
-	 || !extension.compare(".skm"))
+	if (extension == ".md2" || extension == ".skm")
 	{
 		str->assign(filename + ".mdl");
 	}
 
-	else if (!extension.compare(".jpg")
-		  || !extension.compare(".tga")
-		  || !extension.compare(".pcx")
-		  || !extension.compare(".wal"))
+	else if (extension == ".jpg"
+		  || extension == ".tga"
+		  || extension == ".pcx"
+		  || extension == ".wal")
 	{
 		str->assign(filename + ".img");
 	}
@@ -240,13 +239,13 @@ void BSPFile::ReplaceFileEnding(std::string * str)
 bool BSPFile::IsVised(void) const
 {
 	uint32_t length = (uint32_t)(*(&mBytes[4+4 + 3*8 + 4]));
-	return (length > 0);
+	return length > 0;
 }
 
 bool BSPFile::IsLighted(void) const
 {
 	uint32_t length = (uint32_t)(*(&mBytes[4+4 + 7*8 + 4]));
-	return (length > 0);
+	return length > 0;
 }
 
 
@@ -293,9 +292,9 @@ std::vector<std::string> MD2File::GetUsedTextures (void) const
 	uint32_t ofs_skins = *((uint32_t*)(&mBytes[44])); //offset ofs_skins
 	uint32_t num_skins = *((uint32_t*)(&mBytes[20])); //offset num_skins
 
-	for (size_t i = ofs_skins; i < (ofs_skins + (num_skins * 64)); i += 64) //size md2_skin
+	for (uint32_t i = ofs_skins; i < (ofs_skins + (num_skins * 64)); i += 64) //size md2_skin
 	{
-		char name[64];
+		char name[65] = { 0 };
 		memcpy(name, &mBytes[i], 64);
 		std::string str(name);
 		size_t exStart;
@@ -361,9 +360,9 @@ std::vector<std::string> SKMFile::GetUsedTextures(void) const
 	uint32_t ofs_meshes = (uint32_t)(*(&mBytes[20])); //offset ofs_meshes
 	uint32_t num_meshes = (uint32_t)(*(&mBytes[16])); //offset num_meshes
 
-	for (size_t i = ofs_meshes; i < (ofs_meshes + (num_meshes * 156)); i += 156) //size skm_mesh
+	for (uint32_t i = ofs_meshes; i < (ofs_meshes + (num_meshes * 156)); i += 156) //size skm_mesh
 	{
-		char shadername[64];
+		char shadername[65] = { 0 };
 		memcpy(shadername, &mBytes[i], 64);
 		std::string str(shadername);
 		size_t exStart;
@@ -402,8 +401,8 @@ RScriptFile::RScriptFile(std::string path)
 
 	stream.seekg(0, std::ios::beg);
 	
-	while (std::getline(stream, line)) //TODO: This doesnt care about comments in the file. But then again the question is:
-	{								   //Should users upload r_scripts including comments? I think its ok if it doesnt care.
+	while (std::getline(stream, line)) //TODO: This doesn't care about comments in the file. But then again the question is:
+	{								   //Should users upload r_scripts including comments? I think it's ok if it doesn't care.
 		size_t linePos = 0;
 		size_t lineOldpos = 0;
 
@@ -413,7 +412,7 @@ RScriptFile::RScriptFile(std::string path)
 		if (line.substr(line.length() - 1, 1) == "\r")
 			line = line.substr(0, line.length() - 1);
 
-		while ((linePos = line.find_first_of("	 ", lineOldpos)) != std::string::npos) //space or tab
+		while ((linePos = line.find_first_of("\t ", lineOldpos)) != std::string::npos) //space or tab
 		{
 			if ((linePos - lineOldpos) > 0)
 				mWords.push_back(line.substr(lineOldpos, linePos - lineOldpos));
@@ -423,6 +422,8 @@ RScriptFile::RScriptFile(std::string path)
 		if ((line.length() - lineOldpos) > 1)
 			mWords.push_back(line.substr(lineOldpos));
 	}
+
+	mIsOk = true;
 }
 
 std::vector<std::string> RScriptFile::GetUsedTextures(void) const
@@ -432,7 +433,7 @@ std::vector<std::string> RScriptFile::GetUsedTextures(void) const
 
 	for(size_t i = 0; i < (mWords.size() - 1); i++) //prevent oor error when accessing mWords[i+1]
 	{
-		if (!mWords[i].compare("map"))
+		if (mWords[i] == "map")
 		{
 			size_t exStart;
 
@@ -444,7 +445,7 @@ std::vector<std::string> RScriptFile::GetUsedTextures(void) const
 			if(std::find(result.begin(), result.end(), found) == result.end())
 				result.push_back(found);
 		}
-		else if (!mWords[i].compare("anim"))
+		else if (mWords[i] == "anim")
 		{
 			size_t texCount = std::find(mWords.begin() + i, mWords.end(), "end") - mWords.begin() + i;
 			result.reserve(result.size() + texCount);
@@ -492,9 +493,9 @@ BSPFilePath::BSPFilePath(std::string path)
 		oldpos = pos + 1;
 	}
 
-	if (mFolders.at(mFolders.size() - 4).compare("pball")
-		|| mFolders.at(mFolders.size() - 3).compare("maps")
-		|| mFolders.at(mFolders.size() - 2).compare("beta"))
+	if (mFolders.at(mFolders.size() - 4) != "pball"
+		|| mFolders.at(mFolders.size() - 3) != "maps"
+		|| mFolders.at(mFolders.size() - 2) != "beta")
 	{
 		mIsOk = false;
 		return;
@@ -507,7 +508,7 @@ BSPFilePath::BSPFilePath(std::string path)
 		return;
 	}
 
-	if (sFilename.substr(sFilename.length() - 4).compare(".bsp"))
+	if (sFilename.substr(sFilename.length() - 4) != ".bsp")
 	{
 		mIsOk = false;
 		return;
@@ -522,10 +523,7 @@ BSPFilePath::BSPFilePath(std::string path)
 			mIsOk = false;
 			return;
 		}
-		else
-		{
-			pos += 5;
-		}
+		pos += 5;
 	}
 	else
 	{
@@ -538,7 +536,7 @@ BSPFilePath::BSPFilePath(std::string path)
 	}
 }
 
-//Gives sth like "C:/Games/Paintball2/pball/"
+//Returns "C:/Games/Paintball2/pball/"
 std::string BSPFilePath::GetPb2BasePath(void) const
 {
 	std::string result;
@@ -552,7 +550,7 @@ std::string BSPFilePath::GetPb2BasePath(void) const
 	return result;
 }
 
-//Gives sth like "maps/beta/mymap_b1.bsp"
+//Returns "maps/beta/mymap_b1.bsp"
 std::string BSPFilePath::GetNonBasePath(void) const
 {
 	std::string result;
@@ -571,7 +569,7 @@ std::string BSPFilePath::GetFilename(void) const
 	return mFolders.at(mFolders.size() - 1);
 }
 
-//Gives sth like "C:/Games/Paintball2/pball/maps/beta/test_b1.bsp"
+//Returns "C:/Games/Paintball2/pball/maps/beta/test_b1.bsp"
 std::string BSPFilePath::GetPath(void) const
 {
 	std::string result;
@@ -603,6 +601,7 @@ ImageFile::ImageFile(const char* pPath)
 	std::ifstream stream(path, std::ios::binary | std::ios::ate);
 	std::streamoff size;
 
+	mType = TYPE_JPEG;
 	mIsOk = false;
 
 	if (!stream)
@@ -615,9 +614,9 @@ ImageFile::ImageFile(const char* pPath)
 	stream.seekg(0, std::ios::beg);
 	stream.read((char*)&mBytes[0], size);
 
-	if (!extension.compare(".wal") && size >= 100) //size wal_header
+	if (extension == ".wal" && size >= 100) //size wal_header
 	{
-		char name[32];
+		char name[33] = { 0 };
 		memcpy(name, &mBytes[0], 32); //name offset
 
 		if (path.find(name) != std::string::npos)
@@ -626,7 +625,7 @@ ImageFile::ImageFile(const char* pPath)
 			mIsOk = true;
 		}
 	}
-	else if (!extension.compare(".jpg") && size >= 2) //size jpg_header
+	else if (extension == ".jpg" && size >= 2) //size jpg_header
 	{
 		uint16_t magic = *((uint16_t*)((&mBytes[0]))); //magic offset
 		if(magic == 0xd8ff)
@@ -635,7 +634,7 @@ ImageFile::ImageFile(const char* pPath)
 			mIsOk = true;
 		}
 	}
-	else if (!extension.compare(".pcx") && size >= 126) //size pcs_header
+	else if (extension == ".pcx" && size >= 126) //size pcs_header
 	{
 		uint8_t magic = *((uint8_t*)((&mBytes[0]))); //magic offset
 		if (magic == 0x0A)
@@ -644,7 +643,7 @@ ImageFile::ImageFile(const char* pPath)
 			mIsOk = true;
 		}
 	}
-	else if (!extension.compare(".tga") && size >= 16) //size tga_header
+	else if (extension == ".tga" && size >= 16) //size tga_header
 	{
 		uint8_t paletteType = *((uint8_t*)((&mBytes[1]))); //palette type offset
 		if (paletteType >= 0 && paletteType <= 1)
@@ -653,7 +652,7 @@ ImageFile::ImageFile(const char* pPath)
 			mIsOk = true;
 		}
 	}
-	else if (!extension.compare(".png") && size >= 8) //size png_header
+	else if (extension == ".png" && size >= 8) //size png_header
 	{
 		uint64_t magic = *((uint64_t*)((&mBytes[0]))); //magic offset
 		if (magic == 0x0A1A0A0D474E5089)
@@ -664,7 +663,7 @@ ImageFile::ImageFile(const char* pPath)
 	}
 }
 
-int ImageFile::GetHeight(void) const
+uint32_t ImageFile::GetHeight(void) const
 {
 	switch (mType)
 	{
@@ -722,7 +721,7 @@ int ImageFile::GetHeight(void) const
 	return -1;
 }
 
-int ImageFile::GetWidth(void) const
+uint32_t ImageFile::GetWidth(void) const
 {
 	switch (mType)
 	{
@@ -782,24 +781,12 @@ int ImageFile::GetWidth(void) const
 
 bool ImageFile::IsHeightPowerOfTwo(void) const
 {
-	int height = GetHeight();
-	while (((height % 2) == 0) && height > 1)
-	{
-		height /= 2;
-	}
-
-	return (height == 1);
+	return std::has_single_bit(GetHeight());
 }
 
 bool ImageFile::IsWidthPowerOfTwo(void) const
 {
-	int width = GetWidth();
-	while (((width % 2) == 0) && width > 1)
-	{
-		width /= 2;
-	}
-
-	return (width == 1);
+	return std::has_single_bit(GetWidth());
 }
 
 bool ImageFile::IsOk(void) const
