@@ -5,7 +5,7 @@ You can download the most current version [here](https://github.com/richardebeli
 
 Simply drag-and-drop your mapfile from the maps/beta directory in the game onto the window.
 
-![Screenshot of the main window](/screenshot.png?raw=true "Screenshot of the main window")
+<img src="/screenshot.png?raw=true" width="312px" alt="Screenshot of the main window"/>
 
 ## Compiling
 * Get the zlib dependency
